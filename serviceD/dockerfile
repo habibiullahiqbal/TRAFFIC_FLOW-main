@@ -1,0 +1,14 @@
+# Dockerfile for React frontend
+FROM node:18 AS build
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 3004
+
+CMD ["npm", "run", "start"]

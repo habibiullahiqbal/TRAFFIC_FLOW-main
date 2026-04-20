@@ -1,0 +1,46 @@
+name: CD - Deploy to EC2
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: SCP docker-compose file to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.yaml"
+          target: "/home/ubuntu/"
+
+      - name: Execute Remote Commands via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # 1. AWS CLI Configure (Using Secrets)
+            export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+            export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            export AWS_DEFAULT_REGION=ap-south-1
+
+            # 2. ECR Login
+            aws ecr get-login-password --region ap-south-1 | sudo docker login --username AWS --password-stdin 547519647676.dkr.ecr.ap-south-1.amazonaws.com
+            
+            
+            # 3. Deployment
+            cd /home/ubuntu/
+            sudo docker-compose pull
+            sudo docker-compose up -d
+
+
+            # 4. Cleanup (Faltu images delete karne ke liye)
+            sudo docker system prune -f
