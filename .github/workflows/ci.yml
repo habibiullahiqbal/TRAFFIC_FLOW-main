@@ -1,53 +1,88 @@
-name: CI - Build & Push to ECR
+name: TRAFFIC_FLOW_CI
+
 
 on:
   push:
-    branches: ["main"]
+    branches: [main]
+
+
+permissions:
+  contents: read
+  id-token: write
+
 
 jobs:
+  # -------------------- BUILD & PUSH IMAGES --------------------
   build-and-push:
+    name: Build and Push Docker Images to ECR
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        include:
-          - service: servicea
-            folder: serviceA
-          - service: serviceb
-            folder: serviceB
-          - service: servicec
-            folder: serviceC
-          - service: serviced
-            folder: serviceD
-          - service: servicee
-            folder: serviceE
-          - service: frontend
-            folder: frontend
 
     steps:
+      # 1️⃣ Checkout
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
+
+      # 2️⃣ Configure AWS credentials
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-south-1
+          aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login to ECR
-        run: |
-          aws ecr get-login-password --region ap-south-1 | \
-          docker login --username AWS --password-stdin 547519647676.dkr.ecr.ap-south-1.amazonaws.com
 
-      - name: Build Docker image
-        run: |
-          docker build -t ${{ matrix.service }} ./${{ matrix.folder }}
+      # 3️⃣ Login to Amazon ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Tag image
-        run: |
-          docker tag ${{ matrix.service }}:latest 547519647676.dkr.ecr.ap-south-1.amazonaws.com/${{ matrix.service }}:latest
 
-      - name: Push to ECR
+      # ---------- FRONTEND ----------
+      - name: Build and Push frontend
         run: |
-          docker push 547519647676.dkr.ecr.ap-south-1.amazonaws.com/${{ matrix.service }}:latest
+          docker build -t frontend ./frontend
+          docker tag frontend:latest ${{ secrets.ECR_REGISTRY }}/frontend:latest
+          docker push ${{ secrets.ECR_REGISTRY }}/frontend:latest
+
+
+      # ---------- ServiceA ----------
+      - name: Build and Push ServiceA
+        run: |
+          docker build -t servicea .
+          docker tag servicea:latest ${{ secrets.ECR_REGISTRY }}/servicea:latest
+          docker push ${{ secrets.ECR_REGISTRY }}/servicea:latest
+
+
+      # ---------- ServiceB ----------
+      - name: Build and Push ServiceB
+        run: |
+          docker build -t serviceb .
+          docker tag serviceb:latest ${{ secrets.ECR_REGISTRY }}/serviceb:latest
+          docker push ${{ secrets.ECR_REGISTRY }}/serviceb:latest
+
+
+      # ---------- ServiceC ----------
+      - name: Build and Push ServiceC
+        run: |
+          docker build -t servicec .
+          docker tag servicec:latest ${{ secrets.ECR_REGISTRY }}/servicec:latest
+          docker push ${{ secrets.ECR_REGISTRY }}/servicec:latest
+
+
+      # ---------- ServiceD ----------
+      - name: Build and Push ServiceD
+        run: |
+          docker build -t serviced .
+          docker tag serviced:latest ${{ secrets.ECR_REGISTRY }}/serviced:latest
+          docker push ${{ secrets.ECR_REGISTRY }}/serviced:latest
+
+
+      # ---------- ServiceE ----------
+      - name: Build and Push ServiceE
+        run: |
+          docker build -t servicee .
+          docker tag servicee:latest ${{ secrets.ECR_REGISTRY }}/servicee:latest
+          docker push ${{ secrets.ECR_REGISTRY }}/servicee:latest
+
