@@ -71,12 +71,14 @@ jobs:
           docker push ${{ secrets.ECR_REGISTRY }}/servicec:latest
 
 
+
       # ---------- ServiceD ----------
       - name: Build and Push ServiceD
         run: |
           docker build -t serviced .
           docker tag serviced:latest ${{ secrets.ECR_REGISTRY }}/serviced:latest
           docker push ${{ secrets.ECR_REGISTRY }}/serviced:latest
+
 
 
       # ---------- ServiceE ----------
